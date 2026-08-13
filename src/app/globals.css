@@ -1,26 +1,294 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   AskCruz design tokens — luxury-minimal.
+
+   White page, restrained palette, generous whitespace. The only
+   colour on the page is a single deep steel-blue, and it is
+   reserved for two jobs: the CTA, and the thread/brain system.
+   Everything else is ink, mute, and rule on paper.
+
+   If you are reaching for a second accent, don't — the restraint
+   is the design.
+   ============================================================ */
+@theme {
+  /* Surfaces */
+  --color-paper: #faf9f7; /* page — off-white, never clinical #fff */
+  --color-card: #ffffff; /* raised surface, reads as lift on paper */
+
+  /* Text */
+  --color-ink: #1a1a1a; /* near-black, never pure black */
+  --color-mute: #6e7276; /* secondary + body */
+  --color-faint: #a4a8ab; /* tertiary, captions, placeholder labels */
+
+  /* Structure */
+  --color-rule: #e6e4df; /* hairlines */
+
+  /* The single accent. CTAs, active states, threads, brain. */
+  --color-slate: #2b4257;
+  --color-slate-soft: #5b7f9e; /* lighter pass, for glow and rim light */
+
+  /* Type — one geometric sans across the whole site. */
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    background-color: var(--color-paper);
+    scroll-behavior: auto;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-slate);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-slate);
+    color: var(--color-paper);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Display type: light weight, wide-ish tracking, tight leading.
+   Restraint over decoration — no condensed industrial voice. */
+@utility type-display {
+  font-family: var(--font-display);
+  font-weight: 275;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+/* Eyebrows and small labels: light, widely tracked, uppercase.
+   0.75rem on phones, 0.6875rem from `sm` up. 11px uppercase at 0.22em
+   tracking is a fine editorial detail on a desktop monitor and genuinely
+   hard work on a handset held at arm's length — the wide tracking that
+   makes it elegant is the same thing that stops the letters grouping into
+   words at that size. The desktop value is unchanged. */
+@utility type-label {
+  font-weight: 500;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+@media (width >= 40rem) {
+  .type-label {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Kept as an alias so existing call sites don't all need touching. */
+@utility type-data {
+  font-weight: 500;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+@media (width >= 40rem) {
+  .type-data {
+    font-size: 0.6875rem;
+  }
+}
+
+/* ============================================================
+   The one reveal pattern.
+
+   Section 2 of the brief: find the entrance that works and reuse
+   it everywhere rather than inventing a fade per section. This is
+   it — a short rise and fade, staggered across siblings. The hero
+   runs it on load; every other section runs it on scroll-into-view.
+
+   Visible by default; only hidden once the inline script in the
+   document head confirms JS is present to bring it back.
+   ============================================================ */
+@utility reveal {
+  opacity: 1;
+  transition:
+    opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+html.js .reveal[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* ============================================================
+   Logo treatment.
+
+   Every logo on the site gets the same treatment: one fixed
+   bounding box, contain-fit, generous padding — and full colour,
+   always. Consistency comes from the box, not from draining the
+   colour out of the marks.
+   ============================================================ */
+@utility logo-plate {
+  /* Full colour, always. An earlier pass greyscaled these and revealed colour
+     on hover; at 55% opacity on a white plate the paler marks (Gerdau, EOXS)
+     read as empty boxes. Brand marks are the credential here — showing them
+     faintly defeats the point of having them. */
+  opacity: 1;
+  /* Removes baked-in white backgrounds from logo files: white pixels
+     multiply to paper (#faf9f7 ≈ white) and become invisible, while
+     coloured pixels are preserved. Only works on light backgrounds,
+     which is the only background this design uses. */
+  mix-blend-mode: multiply;
+}
+
+/* ============================================================
+   Client marquee — continuous, seamless.
+
+   The track holds the logo set twice; translating by exactly -50%
+   lands the second copy where the first began, so the wrap is
+   invisible. Duration is set inline from the item count to keep a
+   constant speed regardless of how many logos are in the set.
+   ============================================================ */
+@keyframes marquee-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-drift linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Soft edges so logos enter and leave rather than being cut off. */
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+}
+
+/* ============================================================
+   Thread diagrams (the 2D restatement of the Convergence).
+   ============================================================ */
+.thread-branch__line {
+  fill: none;
+  stroke: var(--color-slate);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  opacity: 0.28;
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  transition: stroke-dashoffset 1.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.thread-branch[data-shown="true"] .thread-branch__line {
+  stroke-dashoffset: 0;
+}
+
+/* Position and opacity are driven by <animateMotion>/<animate> in
+   ThreadDiagram.tsx, NOT from here. The CSS `offset-path` version this
+   replaced left the packet stranded at 0,0 on Safari, which does not support
+   it reliably — see the note in that file. Deliberately no `opacity` rule
+   either: CSS beats SMIL, so declaring it here would pin the packet invisible
+   and undo the fade. */
+.thread-branch__packet {
+  fill: var(--color-slate);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--color-slate-soft) 70%, transparent));
+}
+
+.brain-glyph__halo {
+  fill: var(--color-slate-soft);
+  opacity: 0.08;
+}
+
+.brain-glyph__shell {
+  fill: none;
+  stroke: var(--color-slate);
+  stroke-width: 1.2;
+  opacity: 0.65;
+}
+
+.brain-glyph__fold {
+  fill: none;
+  stroke: var(--color-slate);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  opacity: 0.32;
+}
+
+.brain-glyph__node {
+  fill: var(--color-slate);
+  opacity: 0.8;
+}
+
+/* ============================================================
+   Reduced motion.
+
+   Equivalents, never absences: reveals show outright, the marquee
+   becomes a static wrapped grid (see ClientMarquee), and the
+   thread packet parks at the end of its path instead of looping.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html.js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .marquee-track {
+    animation: none !important;
+  }
+
+  .thread-branch__line {
+    stroke-dashoffset: 0 !important;
+  }
+
+  /* The packet's SMIL animations are simply never begun under reduced motion
+     (ThreadDiagram.tsx sets data-static instead of calling beginElement), so
+     there is no animation to cancel here — just make the parked packet
+     visible. */
+  .thread-branch[data-static="true"] .thread-branch__packet {
+    opacity: 1;
+  }
 }
