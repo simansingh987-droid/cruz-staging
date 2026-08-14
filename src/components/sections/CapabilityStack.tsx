@@ -2,15 +2,17 @@ import { Section, Heading, Lede } from "../ui/Section";
 import { Reveal } from "../ui/Reveal";
 import { ThreadBranch } from "../ui/ThreadDiagram";
 import { BrainGlyph } from "../ui/BrainGlyph";
+import { CapabilityLayers } from "./CapabilityLayers";
 
 /**
  * Row 6 — the capability stack, and the Convergence's second appearance.
  *
  * The hero showed the brain *forming* out of people. Here it is shown *being
- * fed*: ERP records, email and call transcripts stream inward and land on the
- * same mark. That inward direction is the whole point — Cruz ingests
- * continuously, it does not broadcast — and it is what ties this diagram to
- * the hero convergence. Cut it if it ever stops carrying that meaning.
+ * fed*: ERP records, emails and call transcripts stream down from the top of
+ * the frame and land on the same mark below. That inward direction is the
+ * whole point — Cruz ingests continuously, it does not broadcast — and it is
+ * what ties this diagram to the hero convergence. Cut it if it ever stops
+ * carrying that meaning.
  */
 const SOURCES = [
   {
@@ -27,7 +29,12 @@ const SOURCES = [
   },
   {
     id: "email",
-    label: "Email",
+    // Plural, unlike the singular "Email" the Diagnostic checklist uses. There
+    // it names a system you either run or don't; here it names the material
+    // being read, and the other two labels on this diagram are plural records
+    // ("Orders · inventory · margin", "Call transcripts") — a singular in the
+    // middle read as the app rather than the correspondence.
+    label: "Emails",
     sub: "What was actually promised",
     icon: (
       <>
@@ -45,29 +52,6 @@ const SOURCES = [
         <path d="M-11 0v0M-11 -3v6M-6.5 -7v14M-2 -10v20M2.5 -6v12M7 -3v6M11 -1v2" />
       </>
     ),
-  },
-] as const;
-
-const LAYERS = [
-  {
-    n: "01",
-    name: "Company Brain",
-    body: "Everything your business knows, held in one place and kept current — who does what, how the work is really done, and why past calls went the way they did.",
-  },
-  {
-    n: "02",
-    name: "Company Hands",
-    body: "Cruz acts on what it knows: drafts the quote, flags the slipping order, files the call against the right account. Knowledge that does something.",
-  },
-  {
-    n: "03",
-    name: "Digital Workforce",
-    body: "Standing roles rather than one-off answers. Cruz watches a queue, chases an exception, and reports back the way a coordinator would.",
-  },
-  {
-    n: "04",
-    name: "Company Personalization",
-    body: "It converges on how your own company operates — your pricing logic, your tolerances, your vocabulary. Two steel businesses get two different Cruzes.",
   },
 ] as const;
 
@@ -140,20 +124,41 @@ function SourceNode({
  * not broadcast. A diagram showing light leaving the brain and arriving at the
  * ERP says the opposite of the product — and the same inward motion is what
  * ties this section to the hero convergence.
+ *
+ * BOTH COMPOSITIONS NOW RUN TOP-TO-BOTTOM: the three sources sit across the
+ * top and the brain sits under them. The wide one used to run right-to-left
+ * and the narrow one bottom-to-top, which meant the same argument was made in
+ * two different directions depending on the visitor's screen width — and the
+ * narrow version had light climbing *up* into the brain, so the material
+ * appeared to rise out of the systems rather than collect. Downward is the
+ * direction the eye already reads in, and things that collect, collect below.
  */
 
-/** Wide composition: sources on the right, brain on the left. */
+/**
+ * Wide composition: sources across the top, brain centred beneath them.
+ *
+ * Sources sit at x 175 / 350 / 525. That is 175 apart, not the full width of
+ * the frame: each node carries a caption under it ("Orders · inventory ·
+ * margin" is the widest, ~125px at 10px), and spreading them further does not
+ * buy anything once the captions clear each other. It also keeps the fan angle
+ * gentle enough that the outer threads read as curves rather than diagonals.
+ *
+ * Threads start at y=130 — below the captions, not at the node edge, so they
+ * do not run through the type — and land at y=276, which is 46 above the
+ * brain's centre and therefore just inside its upper edge rather than at its
+ * middle. Same inset the right-to-left version used.
+ */
 const WIDE_PATHS = [
-  "M566 62 C 400 62, 330 170, 196 170",
-  "M566 170 C 420 170, 350 170, 196 170",
-  "M566 278 C 400 278, 330 170, 196 170",
+  "M175 130 C 175 215, 350 205, 350 276",
+  "M350 130 C 350 195, 350 215, 350 276",
+  "M525 130 C 525 215, 350 205, 350 276",
 ];
 
-/** Narrow composition: sources beneath, brain above. */
+/** Narrow composition: same top-to-bottom reading, three nodes to a row. */
 const NARROW_PATHS = [
-  "M74 214 C 74 160, 160 150, 160 96",
-  "M160 214 C 160 180, 160 170, 160 96",
-  "M246 214 C 246 160, 160 150, 160 96",
+  "M74 105 C 74 165, 160 175, 160 224",
+  "M160 105 C 160 150, 160 175, 160 224",
+  "M246 105 C 246 165, 160 175, 160 224",
 ];
 
 export function CapabilityStack() {
@@ -170,24 +175,33 @@ export function CapabilityStack() {
 
       {/* ---- The brain, acting. ---- */}
       <Reveal delay={80} className="mt-14">
-        <div className="border-rule/50 bg-card/40 border p-4 sm:p-8">
+        {/* No fill. This was `bg-card/40` — a white wash on paper — which put a
+            near-white slab behind a diagram whose three source nodes are
+            themselves white cards. The nodes stopped reading as raised objects
+            because they were the same colour as the surface they sat on. The
+            panel now takes the page's own paper, so the only white in the
+            frame is the three boxes, which is where the eye should go. The
+            hairline border stays; it is what frames the diagram. */}
+        <div className="border-rule/50 border p-4 sm:p-8">
           <svg
-            // Height leaves room for the description under the lowest node —
-            // at 340 the last line was clipped by the viewBox edge.
-            viewBox="0 0 700 356"
+            // 420 tall, up from 356. The frame is no longer sized by the
+            // stacked column of nodes but by the full descent: captions end at
+            // y=123, and the brain runs 253–391 at this scale, so anything
+            // shorter clipped the mark's lower edge.
+            viewBox="0 0 700 420"
             className="hidden w-full sm:block"
             role="img"
-            aria-label="Threads of light travelling inward from three live data sources — ERP, email and call transcripts — into the Cruz brain mark."
+            aria-label="Threads of light travelling downward from three live data sources — ERP, emails and call transcripts — into the Cruz brain mark below them."
           >
             {WIDE_PATHS.map((d, i) => (
               <ThreadBranch key={d} d={d} delay={i * 180} />
             ))}
-            <BrainGlyph x={150} y={170} scale={1.15} />
+            <BrainGlyph x={350} y={322} scale={1.15} />
             {SOURCES.map((s, i) => (
               <SourceNode
                 key={s.id}
-                x={592}
-                y={[62, 170, 278][i]}
+                x={[175, 350, 525][i]}
+                y={52}
                 source={s}
               />
             ))}
@@ -197,17 +211,17 @@ export function CapabilityStack() {
             viewBox="0 0 320 330"
             className="w-full sm:hidden"
             role="img"
-            aria-label="Threads of light travelling inward from three live data sources — ERP, email and call transcripts — into the Cruz brain mark."
+            aria-label="Threads of light travelling downward from three live data sources — ERP, emails and call transcripts — into the Cruz brain mark below them."
           >
             {NARROW_PATHS.map((d, i) => (
               <ThreadBranch key={d} d={d} delay={i * 180} />
             ))}
-            <BrainGlyph x={160} y={58} scale={0.72} />
+            <BrainGlyph x={160} y={262} scale={0.72} />
             {SOURCES.map((s, i) => (
               <SourceNode
                 key={s.id}
                 x={[74, 160, 246][i]}
-                y={240}
+                y={46}
                 source={s}
                 showSub={false}
               />
@@ -216,27 +230,7 @@ export function CapabilityStack() {
         </div>
       </Reveal>
 
-      {/* ---- The four layers, in order of sophistication. ---- */}
-      <ul className="mt-6 grid gap-px sm:grid-cols-2">
-        {LAYERS.map((l, i) => (
-          <Reveal
-            as="li"
-            key={l.n}
-            delay={i * 70}
-            className="border-rule/50 bg-card/50 border p-7 sm:p-8"
-          >
-            <div className="flex items-baseline gap-3">
-              <span className="type-label text-slate">
-                {l.n}
-              </span>
-              <h3 className="type-display text-ink text-xl sm:text-2xl">
-                {l.name}
-              </h3>
-            </div>
-            <p className="text-mute mt-3.5 text-sm leading-relaxed">{l.body}</p>
-          </Reveal>
-        ))}
-      </ul>
+      <CapabilityLayers />
     </Section>
   );
 }

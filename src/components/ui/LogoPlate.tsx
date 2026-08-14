@@ -7,7 +7,7 @@ import { logoBox, type Logo } from "@/lib/logos";
  * Sizing is AREA-NORMALISED, not box-fitted. Two earlier attempts fitted every
  * mark into one fixed slot with `object-contain`, and both left the near-square
  * logos looking tiny: in a short wide slot, Brannon (aspect 0.93) is
- * height-capped and covers less than half the ink of Monarch (aspect 4.95).
+ * height-capped and covers less than half the ink of 3GM (aspect 5.19).
  * Same box, wildly different optical weight.
  *
  * Here each mark gets its own width and height, computed so `w * h` is

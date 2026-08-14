@@ -13,8 +13,7 @@ cost and latency.
 | `approach-vertical.mp4`         | `ConvergenceHero` (<768px)          | 9:16 centre crop of the same take. |
 | `approach-poster.jpg`           | Desktop poster, frame-0 still, `HeroStatic` | Frame 0 of the desktop plate, so the still→video handover is invisible. |
 | `approach-poster-vertical.jpg`  | Mobile poster + frame-0 still       | Frame 0 of the 9:16 plate. |
-| `dna-helix.mp4`                 | `IndustryHelix`                     | Scrubbed by scroll, full-bleed. Carries its own industry panels — the section deliberately renders no photo cards over it. |
-| `dna-helix-poster.jpg`          | Helix video poster                  | Frame 0 of the helix plate. |
+| `industry-*.jpg`                | `Industries`                        | One still per steel operation, used as the lane photos in the slitting-line accordion. |
 | `frames/hero/frame-NNNN.jpg`    | Nothing at runtime                  | Full 24fps extraction of the hero take (361 frames, 1280px wide). Reference only — the hero scrubs the video, not a frame sequence. Safe to delete. |
 
 If any file is missing the hero degrades on its own: the video's `onError`

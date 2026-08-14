@@ -26,10 +26,44 @@ const LINKS = [
  * tubes are dark, so a border flood-fill separates them exactly — 73% of the
  * frame lifted with the mark untouched.
  *
- * The source is CROPPED: the lower-left arm runs off the bottom edge of the
- * supplied file. Verified at true render size before shipping — at 44px the
- * cut is not perceptible. It would be at large sizes, so re-export with the
- * full mark in frame before using this anywhere bigger.
+ * The asset is the UNCROPPED master, supplied late and worth the wait. The
+ * file that shipped before it was 640x378 and cut on three sides: ink ran off
+ * the left edge and the bottom, so all three converging arms ended in flat
+ * vertical shears instead of the rounded caps the render actually draws. No
+ * amount of reconstruction fixed that honestly — the geometry was simply not
+ * in the file.
+ *
+ * The replacement arrived 2400x1792 with the editor's transparency
+ * CHECKERBOARD baked in as opaque pixels (its alpha channel was uniformly
+ * 255), the same defect the Salesforce and QuickBooks marks had. It is knocked
+ * out on colour: the checkerboard is perfectly neutral grey and every part of
+ * the artwork — including the pale glass disc behind the node, the one piece a
+ * brightness threshold destroys — carries blue, B−R ≥ 46 against the
+ * background's 0.
+ *
+ * ALPHA IS FEATHERED BY DISTANCE TO THE KNOCKED-OUT REGION, NOT BY COLOUR.
+ * A first pass feathered by colour saturation instead — ramping alpha down
+ * wherever a pixel was low-saturation, on the reasoning that the mark/
+ * checkerboard boundary is itself a low-saturation blend. That reasoning had
+ * a blind spot: the specular HIGHLIGHT on each rounded cap is *also*
+ * low-saturation, being close to white, and it sits nowhere near the actual
+ * silhouette edge. Feathering by colour alone quietly punched partial-alpha
+ * holes straight through the highlights — worst on the bottom-left arm, where
+ * the brightest highlight happens to sit right at the tip, so that arm read as
+ * fading out / cut off exactly where a visitor would look for its cap. Fixed
+ * by computing a literal pixel-distance-to-background map instead: only
+ * pixels within ~2px of a real edge get feathered, so a highlight forty pixels
+ * from the silhouette boundary is left at full alpha regardless of how
+ * desaturated its colour is.
+ *
+ * SAVED LOSSLESS, not the quality-95 lossy WEBP an earlier pass used. Lossy
+ * compression re-touches the alpha channel too, and on an image whose only
+ * mid-tone alpha values are meant to be a deliberate 2px feather ring,
+ * lossy's own compression artefacts are large enough to matter at this size.
+ *
+ * Trimmed to the ink and shipped at 480px — roughly 11x the largest size this
+ * has ever rendered at (44px), which is headroom for retina displays without
+ * carrying the full 2400px source's file weight for no visible benefit.
  *
  * NOT used for the browser-tab favicon: at 16px the detail collapses into an
  * unreadable blur (verified by rendering at true size) — the flat linework
@@ -41,9 +75,21 @@ function CruzMark() {
     <Image
       src="/brand/askcruz-mark.webp"
       alt=""
-      width={640}
-      height={378}
-      className="h-8 w-8 shrink-0 object-contain"
+      width={480}
+      height={328}
+      // `h-9 w-auto` — 36px tall, 53px wide. NOT a forced square box.
+      //
+      // This mark carries a lot of structure for its size: three converging
+      // arms, a node, a glass disc and a chevron across a 1.46:1 frame. Bench
+      // rendering the real (correct, uncropped) asset at 36 / 40 / 44 / 48 /
+      // 52 / 64px found the caps read cleanly from 44 up and comfortably from
+      // 48. 36 is BELOW that floor on purpose, at explicit request, after two
+      // prior steps down (48 -> 44 -> 40 -> this) — each arm comes out close to
+      // 2px wide, thin enough to look faint rather than clipped. The asset
+      // itself is not the problem this time: nothing is cropped, there is
+      // simply very little of it left to render. If "the logo looks cut off"
+      // comes back, the fix is sizing back up, not touching this file again.
+      className="h-9 w-auto shrink-0 object-contain"
       priority
     />
   );
@@ -135,109 +181,134 @@ export function Nav() {
       // viewport, it hovers inside it, which is the current convention for
       // this kind of marketing site and reads as considerably lighter than a
       // hard-edged strip.
-      className="fixed inset-x-0 top-0 z-50 px-4 pt-3 sm:px-6 sm:pt-4"
+      className="fixed inset-x-0 top-0 z-50 pt-3 sm:pt-4"
     >
-      <nav
-        aria-label="Primary"
-        // Translucent + backdrop-blur, NOT the previous opaque fill. The bar
-        // still has to stay readable over the hero footage — that was the
-        // whole reason it stopped being transparent — but at 80% over a blur
-        // the page reads through it as texture rather than legible detail, so
-        // the links keep their contrast while the bar stops looking like a
-        // solid slab pasted on top.
-        //
-        // Two states, switched by what is currently behind the bar.
-        //
-        // Over a visual (hero plate, DNA helix) the fill, border and shadow
-        // all drop away so the chrome stops competing with the imagery. The
-        // backdrop-blur is deliberately KEPT even then: it is not a
-        // background, it just softens whatever is behind the type, and it is
-        // the only thing standing between these links and the stretch of
-        // blown-out warehouse roof that made them unreadable when this bar
-        // was last fully transparent.
-        //
-        // Over ordinary content the pill comes back. Transitioned rather than
-        // snapped, so passing a section boundary reads as the bar settling in
-        // rather than a flicker.
-        //
-        // max-w-4xl (896px) — narrowed from 5xl, originally 6xl. The pill sits
-        // well inside the page's own 6xl content width, which is what makes it
-        // read as floating rather than as a band with rounded ends.
-        className={`mx-auto flex w-full max-w-3xl items-center justify-between gap-5 rounded-full border px-3.5 py-1.5 backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-500 ease-out sm:px-4 sm:py-1.5 ${
-          overVisual
-            ? "border-transparent bg-transparent shadow-none"
-            : "bg-paper/80 border-rule/60 shadow-[0_8px_30px_-12px_rgba(43,66,87,0.28)]"
-        }`}
-      >
-        <Link
-          href="#top"
-          // `-my-2 py-2` lifts the home link's hit box from 28px to 44px
-          // without shifting the wordmark — the padding is absorbed by the
-          // matching negative margin.
-          className="-my-2 flex items-center gap-2.5 py-2"
-          aria-label="AskCruz home"
+      {/* Same max-width and horizontal padding as the hero's copy column
+          (see ConvergenceHero's `max-w-6xl px-5 sm:px-8 lg:px-12`), so the
+          wordmark lands exactly where the hero headline starts instead of at
+          a pill's own, narrower, centred inset. */}
+      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12">
+        <nav
+          aria-label="Primary"
+          // ONE pill spanning the content column — not two.
+          //
+          // Giving the wordmark its own pill beside the links pill fixed the
+          // overlap problem (page copy was scrolling under an unbacked mark)
+          // but produced two floating capsules with a gap between them, which
+          // reads as two navigation bars rather than one.
+          //
+          // `-mx-[13px]` against `px-3` is what lets a single pill do both jobs
+          // at once. The fill extends past the content column on each side,
+          // while the pill's CONTENT box starts exactly ON the column edge —
+          // so the wordmark sits at the hero headline's x, unmoved, and the
+          // CTA ends flush with the column's right edge. Padding without the
+          // negative margin would have pushed both inward by 12px.
+          //
+          // 13, not 12, because the pill is `border` — one pixel of it. The
+          // margin has to cancel border + padding, and at -12 the wordmark
+          // measured exactly 1px right of the h1 it is meant to line up with.
+          //
+          // Translucent + backdrop-blur, NOT an opaque fill. The bar has to
+          // stay readable over the hero footage — the reason it stopped being
+          // transparent — but at 80% over a blur the page reads through it as
+          // texture rather than legible detail, so the links keep their
+          // contrast while the bar stops looking like a slab pasted on top.
+          //
+          // Two states, switched by what is currently behind the bar. Over a
+          // visual the fill, border and shadow all drop away so the chrome
+          // stops competing with the imagery; the blur is deliberately KEPT
+          // even then, since it is the only thing standing between these links
+          // and the blown-out warehouse roof that made them unreadable when
+          // this bar was last fully transparent. Over ordinary content the
+          // pill comes back, transitioned rather than snapped.
+          className={`-mx-[13px] flex items-center justify-between gap-5 rounded-full border px-3 py-1.5 backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-500 ease-out ${
+            overVisual
+              ? "border-transparent bg-transparent shadow-none"
+              : "bg-paper/80 border-rule/60 shadow-[0_8px_30px_-12px_rgba(43,66,87,0.28)]"
+          }`}
         >
-          <CruzMark />
-          <span className="type-display text-ink text-base tracking-tight">
-            AskCruz
-          </span>
-        </Link>
+          <Link
+            href="#top"
+            // `-my-1 py-1` restores the 44px minimum hit target: the mark is
+            // 36px now, 8px under it. The padding grows the tappable box by
+            // 4px top and bottom while the matching negative margin cancels it
+            // in layout, so the pill's height and the wordmark's position are
+            // both unchanged by it.
+            className="-my-1 flex shrink-0 items-center gap-2.5 py-1"
+            aria-label="AskCruz home"
+          >
+            <CruzMark />
+            <span className="type-display text-ink text-base tracking-tight">
+              AskCruz
+            </span>
+          </Link>
 
-        <ul className="hidden items-center gap-8 md:flex">
-          {LINKS.map((l) => (
-            <li key={l.href}>
-              {/* Hover does two things at once: the label takes the brand
-                  slate, and it lifts off the page — a small rise plus a soft
-                  shadow cast down and behind it, so the link reads as a
-                  physical key being raised rather than just recoloured.
-                  `active` presses it back down flat, which is what makes the
-                  lift feel like depth instead of a wobble. */}
-              <Link
-                href={l.href}
-                className="text-mute hover:text-slate inline-block text-sm font-medium transition-all duration-200 ease-out will-change-transform hover:-translate-y-0.5 hover:[text-shadow:0_6px_12px_rgba(43,66,87,0.28)] active:translate-y-0 active:[text-shadow:none]"
+          {/* Links and CTA travel together, hard right. `justify-between` on
+              the pill would otherwise fan them across the full column now that
+              it is 6xl rather than the 3xl the old links-only pill was. */}
+          <div className="flex items-center gap-5">
+            <ul className="hidden items-center gap-8 md:flex">
+              {LINKS.map((l) => (
+                <li key={l.href}>
+                  {/* Hover does two things at once: the label takes the brand
+                      slate, and it lifts off the page — a small rise plus a
+                      soft shadow cast down and behind it, so the link reads as
+                      a physical key being raised rather than just recoloured.
+                      `active` presses it back down flat, which is what makes
+                      the lift feel like depth instead of a wobble. */}
+                  <Link
+                    href={l.href}
+                    className="text-mute hover:text-slate inline-block text-sm font-medium transition-all duration-200 ease-out will-change-transform hover:-translate-y-0.5 hover:[text-shadow:0_6px_12px_rgba(43,66,87,0.28)] active:translate-y-0 active:[text-shadow:none]"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden md:block">
+              <Cta className="px-4 py-2 text-xs" />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              // p-2.5 puts the hit box at 44px — the minimum a fingertip can
+              // reliably land on. The negative margin keeps it optically
+              // aligned to the pill's content edge despite the extra padding.
+              className="text-ink -mr-2.5 p-2.5 md:hidden"
+            >
+              <span className="sr-only">
+                {open ? "Close menu" : "Open menu"}
+              </span>
+              <svg
+                viewBox="0 0 24 24"
+                className="h-6 w-6"
+                aria-hidden
+                fill="none"
               >
-                {l.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-        <div className="hidden md:block">
-          <Cta className="px-4 py-2 text-xs" />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          // p-2.5 puts the hit box at 44px — the minimum a fingertip can
-          // reliably land on. The negative margin keeps it optically aligned
-          // to the container edge despite the extra padding.
-          className="text-ink -mr-2.5 p-2.5 md:hidden"
-        >
-          <span className="sr-only">
-            {open ? "Close menu" : "Open menu"}
-          </span>
-          <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden fill="none">
-            {open ? (
-              <path
-                d="M6 6l12 12M18 6L6 18"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-            ) : (
-              <path
-                d="M4 7h16M4 12h16M4 17h16"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-            )}
-          </svg>
-        </button>
-      </nav>
+                {open ? (
+                  <path
+                    d="M6 6l12 12M18 6L6 18"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                ) : (
+                  <path
+                    d="M4 7h16M4 12h16M4 17h16"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
+        </nav>
+      </div>
 
       {open ? (
         <div
@@ -245,9 +316,11 @@ export function Nav() {
           // Its own rounded card below the pill, not a panel welded under a
           // full-width band — the old `border-t` was there to butt against a
           // bar that no longer spans the viewport, and would have hung in
-          // mid-air on its own.
-          className="border-rule/60 bg-paper/95 mx-auto mt-2 max-w-3xl rounded-3xl border px-5 pt-3 pb-6 shadow-[0_8px_30px_-12px_rgba(43,66,87,0.28)] backdrop-blur-xl md:hidden"
+          // mid-air on its own. Padded to the same 6xl content column as the
+          // header row above it, so its edges line up with the wordmark.
+          className="mx-auto mt-2 max-w-6xl px-5 sm:px-8 lg:px-12 md:hidden"
         >
+          <div className="border-rule/60 bg-paper/95 rounded-3xl border px-5 pt-3 pb-6 shadow-[0_8px_30px_-12px_rgba(43,66,87,0.28)] backdrop-blur-xl">
           <ul className="flex flex-col">
             {LINKS.map((l) => (
               <li key={l.href}>
@@ -262,6 +335,7 @@ export function Nav() {
             ))}
           </ul>
           <Cta className="mt-6 w-full justify-center" />
+          </div>
         </div>
       ) : null}
     </header>

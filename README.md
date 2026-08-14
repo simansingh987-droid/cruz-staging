@@ -98,7 +98,12 @@ procedural attempt failed for a reason worth remembering:
 | --- | --- |
 | `brain-glow.png` | Gyri and sulci are the entire visual signature of a brain and do not survive being approximated with noise on a sphere. Three attempts read as a stone. |
 | `brain-line.png` | A static 2D mark on a white page — hand-built bezier paths read as a horseshoe. White field is knocked out to alpha. |
-| `dna-helix.mp4` | Reading correctly depends on framing, material and lighting, none of which the headless checks catch. The second procedural attempt put the camera inside the helix. |
+
+`dna-helix.mp4` used to be listed here as a third case. It has been deleted
+along with `IndustryHelix`: a scrubbed molecule was a biotech image doing duty
+in a steel section, and it cost 20MB and 420svh of scroll to make no claim
+about the business. `Industries` now runs the slitting-line accordion over the
+four `industry-*.jpg` stills instead — no video, no scroll hijacking.
 
 The rule that falls out of this: **geometry that must hit exact screen
 positions is procedural; geometry judged purely on how it looks is generated.**

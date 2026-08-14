@@ -17,12 +17,20 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
  * add a client and the loop gets proportionally longer rather than faster.
  * Tuned so an individual mark is readable as it passes, not a blur.
  *
- * Scope: only this strip moves. The single Gerdau badge in the hero is a
- * flagship callout, not a list, and the ERP integration logos are a factual
+ * Scope: only this strip moves. The ERP integration logos are a factual
  * compatibility grid — animating those would make a technical claim look like
  * a promotional reel.
+ *
+ * Gerdau lives HERE now, in place of Monarch. It used to be a standalone
+ * flagship badge in the hero; as one client among the rest it belongs in the
+ * same continuous strip.
  */
-const SECONDS_PER_LOGO = 3.6;
+// 2.2s per logo, down from 3.6 — the strip travels ~1.6x faster. This is a
+// pace, not a duration: the total loop is still derived from the logo count,
+// so the pixels-per-second stay constant as the set changes. Much below 2s an
+// individual mark stops being readable as it passes and the strip reads as a
+// blur, which is the ceiling this is tuned against.
+const SECONDS_PER_LOGO = 2.2;
 
 export function ClientMarquee() {
   const reduced = useReducedMotion();

@@ -1,59 +1,332 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Section, Heading, Lede } from "../ui/Section";
+import { Heading, Lede } from "../ui/Section";
 import { Reveal } from "../ui/Reveal";
-import { beatProgress, smooth } from "@/lib/tokens";
 import { useReducedMotion } from "@/lib/useReducedMotion";
-
-const IndustryHelix = dynamic(() => import("./IndustryHelix"), { ssr: false });
 
 /**
  * Row 5 — the steel taxonomy, reused directly from EOXS's own categories.
  *
  * The point of this section is recognition: a service-center COO should see
- * their exact operation named, not a generic "manufacturing" bucket.
+ * their exact operation named, not a generic "manufacturing" bucket. So it
+ * follows eoxs.com's own "Industries We Serve" structure — a photo tile per
+ * industry, with that industry's material forms called out underneath.
  *
- * Presentation is a scroll-driven double helix rather than a grid. The helix
- * rotates as the visitor scrolls, bringing one industry to the front at a
- * time. The description alternates left/right down the list — that alternation
- * is deliberate, not incidental: it keeps the eye moving across the helix
- * instead of reading a single static column beside it.
+ * THE SLITTING LINE — why the layout is what it is.
  *
- * Copy is unchanged from the grid version; only the layout is new.
+ * The scroll-driven DNA helix that used to live here is gone. It was a
+ * scrubbed video of a molecule, which is a biotech image doing duty in a steel
+ * section: pretty, but it made no claim about the business and cost 420svh of
+ * scroll plus a video decode to say nothing.
+ *
+ * What replaced it is a horizontal accordion built as a slitting line — the
+ * machine that takes one wide coil and splits it into narrow strips, and one
+ * of the four operations named on this very list. The panels ARE the strips:
+ * the selected one runs out to full width while the rest stay held as narrow
+ * lanes, and every seam carries a knife line. The metaphor is doing real work
+ * here rather than being decoration, because "one wide thing divided into
+ * lanes, one at a time" is exactly what an accordion is.
+ *
+ * It also costs the page nothing: four stills that were already in the repo,
+ * a flex-grow transition, and no scroll hijacking at all.
  */
-const SEGMENTS = [
+type Segment = {
+  name: string;
+  detail: string;
+  /** The material forms this operation actually handles — EOXS's sub-tags. */
+  forms: readonly string[];
+  image: string;
+  alt: string;
+};
+
+/**
+ * Four, not eoxs.com's five.
+ *
+ * Their list separates "Steel Service Center" from "Steel Warehouse" but gives
+ * both the identical material tags (coils, sheets, plates) — they are one
+ * category split in two. Merging them keeps the taxonomy honest and, more
+ * practically, avoids shipping a fifth tile with either a duplicated photo or
+ * the washed-out yard exterior that is the only other still on hand. The
+ * warehouse side of the work is named in the Service Centers copy instead.
+ */
+const SEGMENTS: readonly Segment[] = [
   {
     name: "Service Centers",
-    detail: "Coils, sheets, plates, structural — multi-location inventory.",
-    corner: "tl",
+    detail:
+      "Multi-location inventory down to the bin, with cycle counts and transfers that actually reconcile.",
+    forms: ["Coils", "Sheets", "Plates", "Structural"],
     image: "/generated/industry-service-center.jpg",
     alt: "Racks of steel coils and stacked plate inside a service center.",
   },
   {
     name: "Processors",
-    detail: "Slitting, cut-to-length, blanking, levelling, toll processing.",
-    corner: "tr",
+    detail:
+      "Slitting, cut-to-length, blanking and levelling — with toll work costed against the customer's own metal.",
+    forms: ["Slitting", "Cut-to-length", "Blanking", "Plasma"],
     image: "/generated/industry-processor.jpg",
     alt: "A slitting line splitting a wide coil into narrow strips.",
   },
   {
     name: "Tube Mills",
-    detail: "Mill scheduling, coil consumption, yield and scrap tracking.",
-    corner: "bl",
+    detail:
+      "Mill scheduling against coil consumption, with yield and scrap tracked per run rather than per month.",
+    forms: ["Tube", "Pipe", "Squares", "Rectangles"],
     image: "/generated/industry-tube-mill.jpg",
     alt: "Strip forming into welded tube through roll stands in a tube mill.",
   },
   {
     name: "Distributors",
-    detail: "Buy-sell, mill direct, drop ship, and consignment programs.",
-    corner: "br",
+    detail:
+      "Buy-sell, mill direct, drop ship and consignment — every program on one margin picture.",
+    forms: ["Carbon", "Hot & cold roll bar", "Flat roll", "Stainless"],
     image: "/generated/industry-distributor.jpg",
     alt: "Flatbed trucks being loaded with bundled structural steel.",
   },
-] as const;
+];
+
+/** How long a lane stays open before the line advances, in ms. */
+const DWELL = 5200;
+
+export function Industries() {
+  const reduced = useReducedMotion();
+  const [active, setActive] = useState(0);
+  /** Set once the visitor takes over; the line stops advancing on its own. */
+  const [manual, setManual] = useState(false);
+  const [inView, setInView] = useState(false);
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  const select = useCallback((i: number) => {
+    setManual(true);
+    setActive(i);
+  }, []);
+
+  // Only run the line while it is actually on screen, and never under reduced
+  // motion — an auto-advancing carousel is precisely the thing that preference
+  // is asking not to see.
+  useEffect(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.35 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (reduced !== false || manual || !inView) return;
+    const id = window.setInterval(
+      () => setActive((i) => (i + 1) % SEGMENTS.length),
+      DWELL,
+    );
+    return () => clearInterval(id);
+  }, [reduced, manual, inView]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const delta =
+      e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!delta) return;
+    e.preventDefault();
+    select((active + delta + SEGMENTS.length) % SEGMENTS.length);
+  };
+
+  /** The line is running only when it is unattended, visible and allowed to. */
+  const running = reduced === false && !manual && inView;
+
+  return (
+    <section id="industries" className="border-rule/40 border-t">
+      <div className="mx-auto w-full max-w-6xl px-5 pt-20 sm:px-8 md:pt-28 lg:px-12">
+        <Reveal>
+          <Heading>We speak your specific business</Heading>
+          <Lede>
+            Cruz is trained on steel operations first — not adapted from a
+            generic manufacturing model. It knows what a heat number is, why a
+            partial coil matters, and what happens when a slitter goes down.
+          </Lede>
+        </Reveal>
+      </div>
+
+      {/* ================= THE SLITTING LINE =================
+          Full-bleed, because a coil running through a slitter does not have
+          margins. The header above keeps the page's 6xl column; this does not. */}
+      <Reveal delay={120}>
+        <div
+          ref={stripRef}
+          role="tablist"
+          aria-label="Steel operations Cruz is built for"
+          tabIndex={0}
+          onKeyDown={onKeyDown}
+          onMouseEnter={() => setManual(true)}
+          // Stacked on phones, where four lanes would each be 24px of nothing;
+          // slit horizontally from `md` up.
+          className="bg-ink mt-14 flex h-[560px] w-full flex-col overflow-hidden md:mt-20 md:h-[68svh] md:min-h-[440px] md:flex-row"
+        >
+          {SEGMENTS.map((s, i) => {
+            const open = i === active;
+            return (
+              <button
+                key={s.name}
+                type="button"
+                role="tab"
+                aria-selected={open}
+                aria-label={s.name}
+                onClick={() => select(i)}
+                onFocus={() => select(i)}
+                // `flex-[N]` is the whole mechanism: the open lane claims four
+                // shares of the strip and the held lanes one each, so opening
+                // one physically pushes the others narrow. Transitioning
+                // flex-grow (not width) keeps the four lanes summing to exactly
+                // 100% at every frame of the move, with no sub-pixel gap
+                // opening at the seams mid-transition.
+                className={`group relative isolate min-w-0 overflow-hidden text-left transition-[flex-grow] duration-[900ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+                  open ? "flex-[4]" : "flex-[1]"
+                }`}
+              >
+                <Image
+                  src={s.image}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 100vw, 70vw"
+                  // Held lanes are desaturated and dim; the open one comes up
+                  // to full colour. The scale nudge is what stops the photo
+                  // looking like it is being squeezed as the lane narrows —
+                  // it is already slightly overscanned, so the crop tightens
+                  // instead of the image compressing.
+                  className={`object-cover transition-[filter,opacity,transform] duration-[900ms] ease-[cubic-bezier(.16,1,.3,1)] ${
+                    open
+                      ? "scale-100 opacity-100 saturate-100"
+                      : "scale-[1.12] opacity-55 saturate-0 group-hover:opacity-75"
+                  }`}
+                />
+
+                {/* Two scrims. The base keeps every lane dark enough for white
+                    type; the second is a bottom-up gradient that only the open
+                    lane gets, so its copy block has its own footing. */}
+                <span
+                  aria-hidden
+                  className={`absolute inset-0 -z-0 transition-colors duration-[900ms] ${
+                    open ? "bg-ink/35" : "bg-ink/60"
+                  }`}
+                />
+                <span
+                  aria-hidden
+                  className={`from-ink/95 via-ink/45 absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t to-transparent transition-opacity duration-[900ms] ${
+                    open ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+
+                {/* THE KNIFE LINE — the seam every lane carries on its leading
+                    edge, standing in for the slitter's circular knife. Bright
+                    hairline plus a short bloom bleeding off it, so it reads as
+                    a cut being made rather than a table border. Suppressed on
+                    the first lane, which has no neighbour to be cut from. */}
+                {i > 0 ? (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent md:inset-x-auto md:inset-y-0 md:left-0 md:h-auto md:w-px md:bg-gradient-to-b"
+                  />
+                ) : null}
+
+                {/* The lane index, set enormous and nearly transparent behind
+                    the copy — the strip number stencilled on the stand. */}
+                <span
+                  aria-hidden
+                  className={`type-display pointer-events-none absolute -bottom-6 right-2 z-0 text-[7rem] leading-none text-white transition-opacity duration-[900ms] select-none sm:right-5 sm:text-[11rem] ${
+                    open ? "opacity-[0.07]" : "opacity-0"
+                  }`}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+
+                {/* ---- HELD LANE: name only.
+                        Turned on its side from `md` up, where a held lane is a
+                        112px-wide column: "Service Centers" does not fit across
+                        that at any readable size, and vertical set type is the
+                        honest answer to a tall narrow slot rather than an
+                        ellipsis. Below `md` the lanes stack into 80px-tall
+                        ROWS, which are wide and short — exactly the opposite
+                        shape — so there the same label sets normally and hangs
+                        off the left edge like a card title. Every held lane has
+                        to be named on both: a row of unlabelled dim photos is
+                        not a menu, it is four mystery boxes. */}
+                <span
+                  aria-hidden
+                  className={`type-label absolute inset-0 z-10 flex items-center px-6 text-white/85 transition-opacity duration-500 md:justify-center md:px-0 ${
+                    open ? "pointer-events-none opacity-0" : "opacity-100"
+                  }`}
+                >
+                  <span className="md:[writing-mode:vertical-rl]">
+                    {s.name}
+                  </span>
+                </span>
+
+                {/* ---- OPEN LANE: the full card. */}
+                <span
+                  className={`absolute inset-x-0 bottom-0 z-10 block p-6 transition-[opacity,transform] duration-700 ease-out sm:p-9 md:p-10 ${
+                    open
+                      ? "translate-y-0 opacity-100 delay-200"
+                      : "pointer-events-none translate-y-3 opacity-0"
+                  }`}
+                >
+                  <span className="type-label mb-3 block text-white/55">
+                    {String(i + 1).padStart(2, "0")} / {String(SEGMENTS.length).padStart(2, "0")}
+                  </span>
+                  <span className="type-display block text-3xl text-white sm:text-4xl md:text-5xl">
+                    {s.name}
+                  </span>
+                  <span className="mt-4 block max-w-md text-sm leading-relaxed text-white/75 sm:text-base">
+                    {s.detail}
+                  </span>
+
+                  {/* The material forms — eoxs.com's own sub-tags per tile.
+                      Staggered so they arrive after the lane has finished
+                      opening rather than travelling with it. */}
+                  <span className="mt-6 flex flex-wrap gap-2">
+                    {s.forms.map((f, k) => (
+                      <span
+                        key={f}
+                        className={`type-label block border border-white/25 px-3 py-1.5 text-white/80 transition-[opacity,transform] duration-500 ease-out ${
+                          open
+                            ? "translate-y-0 opacity-100"
+                            : "translate-y-2 opacity-0"
+                        }`}
+                        style={{ transitionDelay: open ? `${340 + k * 70}ms` : "0ms" }}
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </span>
+                </span>
+
+                {/* Dwell meter. Keyed on `active` so the element is REPLACED
+                    each time the line advances — a CSS animation cannot be
+                    restarted by changing a class, and without the remount the
+                    bar would fill once and then sit there for every lane
+                    after. It disappears the moment the visitor takes over,
+                    because there is no longer a timer for it to describe. */}
+                {open && running ? (
+                  <span
+                    key={active}
+                    aria-hidden
+                    className="dwell-meter absolute inset-x-0 bottom-0 z-20 h-0.5 origin-left bg-white/70"
+                    style={{ animationDuration: `${DWELL}ms` }}
+                  />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </Reveal>
+
+      <div className="mx-auto w-full max-w-6xl px-5 pb-20 sm:px-8 md:pb-28 lg:px-12">
+        <FormsRow />
+      </div>
+    </section>
+  );
+}
 
 const FORMS = [
   "Hot rolled coil",
@@ -66,251 +339,10 @@ const FORMS = [
   "Aluminum",
 ];
 
-/** Each industry owns an equal slice of the section's scroll. */
-const SLICE = 1 / SEGMENTS.length;
-
-/**
- * Where each caption sits, and which way it comes in from.
- *
- * One per corner, clockwise from top-left. The molecule owns the middle of the
- * frame, so the copy stays out at the edges; entering along the diagonal from
- * its own corner means the movement always reads as coming from off-frame
- * rather than sliding around inside it.
- */
-const CORNERS = {
-  tl: {
-    place: "left-4 top-[12%] text-left sm:left-8 lg:left-12",
-    dx: -1,
-    dy: -1,
-  },
-  tr: {
-    place: "right-4 top-[12%] text-right sm:right-8 lg:right-12",
-    dx: 1,
-    dy: -1,
-  },
-  bl: {
-    place: "left-4 bottom-[12%] text-left sm:left-8 lg:left-12",
-    dx: -1,
-    dy: 1,
-  },
-  br: {
-    place: "right-4 bottom-[12%] text-right sm:right-8 lg:right-12",
-    dx: 1,
-    dy: 1,
-  },
-} as const;
-
-/** How far out of its corner a caption starts, in px. */
-const ENTRY_TRAVEL = 52;
-
-export function Industries() {
-  const reduced = useReducedMotion();
-  const trackRef = useRef<HTMLDivElement>(null);
-  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const progress = useRef(0);
-  const [armed, setArmed] = useState(false);
-
-  useEffect(() => {
-    if (reduced !== false) return;
-
-    const apply = (p: number) => {
-      if (p > 0.005) setArmed(true);
-
-      SEGMENTS.forEach((segment, i) => {
-        const el = nodeRefs.current[i];
-        if (!el) return;
-        const start = i * SLICE;
-        // Crossfade so exactly one industry is legible at a time.
-        const inN = smooth(beatProgress(p, [start, start + SLICE * 0.34]));
-        const outN =
-          i === SEGMENTS.length - 1
-            ? 0
-            : smooth(beatProgress(p, [start + SLICE * 0.76, start + SLICE]));
-        const v = inN * (1 - outN);
-        const { dx, dy } = CORNERS[segment.corner];
-        const away = (1 - v) * ENTRY_TRAVEL;
-        el.style.opacity = String(v);
-        el.style.transform = `translate(${dx * away}px, ${dy * away}px)`;
-        el.style.pointerEvents = v > 0.5 ? "auto" : "none";
-      });
-    };
-
-    const measure = () => {
-      const track = trackRef.current;
-      if (!track) return 0;
-      const travel = track.offsetHeight - window.innerHeight;
-      if (travel <= 0) return 0;
-      return Math.min(
-        1,
-        Math.max(0, -track.getBoundingClientRect().top / travel),
-      );
-    };
-
-    let lastFrame = 0;
-    const onScroll = () => {
-      progress.current = measure();
-      if (performance.now() - lastFrame > 200) apply(progress.current);
-    };
-
-    let raf = 0;
-    let running = false;
-
-    const tick = (now: number) => {
-      if (!running) return;
-      raf = requestAnimationFrame(tick);
-      lastFrame = now;
-      progress.current = measure();
-      apply(progress.current);
-    };
-
-    // Same visibility gate as the hero: this loop also drives a video scrub,
-    // and there is no reason for it to run while the visitor is three sections
-    // away. See `ConvergenceHero` for the full reasoning.
-    const start = () => {
-      if (running) return;
-      running = true;
-      raf = requestAnimationFrame(tick);
-    };
-
-    const stop = () => {
-      if (!running) return;
-      running = false;
-      cancelAnimationFrame(raf);
-      progress.current = measure();
-      apply(progress.current);
-    };
-
-    apply(measure());
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-
-    const io = new IntersectionObserver(
-      ([entry]) => (entry.isIntersecting ? start() : stop()),
-      { rootMargin: "20% 0px" },
-    );
-    if (trackRef.current) io.observe(trackRef.current);
-
-    return () => {
-      io.disconnect();
-      running = false;
-      cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, [reduced]);
-
-  // Reduced motion gets the same content as a plain stacked list — every
-  // industry legible at once, no scroll dependency, no helix.
-  if (reduced !== false) {
-    return (
-      <Section className="border-rule/40 border-t">
-        <Reveal>
-          
-          <Heading>We speak your specific business</Heading>
-          <Lede>
-            Cruz is trained on steel operations first — not adapted from a
-            generic manufacturing model. It knows what a heat number is, why a
-            partial coil matters, and what happens when a slitter goes down.
-          </Lede>
-        </Reveal>
-
-        <ul className="mt-14 grid gap-10 sm:grid-cols-2">
-          {SEGMENTS.map((s, i) => (
-            <Reveal as="li" key={s.name} delay={i * 80}>
-              <div className="border-rule/60 relative aspect-[4/3] w-full overflow-hidden rounded-sm border">
-                <Image
-                  src={s.image}
-                  alt={s.alt}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 45vw"
-                  className="object-cover"
-                />
-              </div>
-              <h3 className="type-display text-ink mt-5 text-2xl">{s.name}</h3>
-              <p className="text-mute mt-2 text-sm leading-relaxed">
-                {s.detail}
-              </p>
-            </Reveal>
-          ))}
-        </ul>
-
-        <FormsRow />
-      </Section>
-    );
-  }
-
-  return (
-    <section className="border-rule/40 border-t">
-      <div className="mx-auto w-full max-w-6xl px-5 pt-20 sm:px-8 md:pt-28 lg:px-12">
-        <Reveal>
-          
-          <Heading>We speak your specific business</Heading>
-          <Lede>
-            Cruz is trained on steel operations first — not adapted from a
-            generic manufacturing model. It knows what a heat number is, why a
-            partial coil matters, and what happens when a slitter goes down.
-          </Lede>
-        </Reveal>
-      </div>
-
-      {/* Scroll track — one viewport per industry, plus a lead-in. */}
-      {/* `data-nav-overlay` — see Nav.tsx. The helix runs full-bleed behind
-          this whole track, so the nav drops its fill while it is passing. */}
-      <div
-        ref={trackRef}
-        data-nav-overlay
-        className="relative h-[420svh] w-full"
-      >
-        <div className="sticky top-0 flex h-svh w-full items-center overflow-hidden">
-          {/* The helix runs behind everything as the connecting motif. */}
-          {armed ? (
-            <IndustryHelix progress={progress} />
-          ) : null}
-
-          {/* Captions are corner-anchored, one per corner in reading order:
-              Service Centers top-left, Processors top-right, Tube Mills
-              bottom-left, Distributors bottom-right. `inset-y-0` gives the
-              bottom pair something to hang off; the middle is left clear for
-              the molecule.
-
-              Copy only — the DOM photo card that used to sit beside the helix
-              is gone: the render carries its own industry panels, and a second
-              set of stills laid over them just collided with the footage. The
-              stacked reduced-motion list above still shows every photo. */}
-          <div className="absolute inset-y-0 left-1/2 w-full max-w-6xl -translate-x-1/2">
-            {SEGMENTS.map((s, i) => (
-              <div
-                key={s.name}
-                ref={(el) => {
-                  nodeRefs.current[i] = el;
-                }}
-                className={`absolute w-[min(12rem,calc(50%-1.5rem))] opacity-0 will-change-transform sm:w-[min(22rem,calc(100%-2.5rem))] ${CORNERS[s.corner].place}`}
-              >
-                <p className="type-label text-slate mb-3">
-                  {String(i + 1).padStart(2, "0")}
-                </p>
-                <h3 className="type-display text-ink text-2xl sm:text-3xl">
-                  {s.name}
-                </h3>
-                <p className="text-mute mt-3 text-sm leading-relaxed">
-                  {s.detail}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto w-full max-w-6xl px-5 pb-20 sm:px-8 md:pb-28 lg:px-12">
-        <FormsRow />
-      </div>
-    </section>
-  );
-}
-
 function FormsRow() {
   return (
-    <Reveal delay={120} className="mt-10">
+    <Reveal delay={120} className="mt-14">
+      <p className="type-label text-faint mb-5">Every form you carry</p>
       <ul className="flex flex-wrap gap-2">
         {FORMS.map((f) => (
           <li

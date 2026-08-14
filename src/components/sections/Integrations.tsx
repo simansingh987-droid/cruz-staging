@@ -64,10 +64,13 @@ export function Integrations() {
     <Section className="border-rule/40 border-t">
       <Reveal>
         <Heading>Nothing gets ripped out</Heading>
+        {/* The lede opened with "Cruz reads from the systems you already paid
+            for. Your ERP stays your ERP." — cut, because the heading already
+            says it. What remains is the part that is specific: three things
+            the visitor does NOT have to do. */}
         <Lede>
-          Cruz reads from the systems you already paid for. Your ERP stays your
-          ERP. No migration, no parallel data entry, no retraining your floor on
-          new software.
+          No migration, no parallel data entry, no retraining your floor on new
+          software.
         </Lede>
       </Reveal>
 

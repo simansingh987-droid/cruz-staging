@@ -1,14 +1,13 @@
 import Image from "next/image";
 import { Cta } from "../ui/Cta";
 import { Reveal } from "../ui/Reveal";
-import { FlagshipBadge } from "./FlagshipBadge";
 
 /**
  * The reduced-motion equivalent of the Convergence.
  *
  * A genuine substitute, not a disabled animation. It carries the identical
- * composition as frame 0 — copy left, distant warehouse right, flagship badge
- * beneath — so a visitor who prefers reduced motion sees exactly the hero
+ * composition as frame 0 — copy left, distant warehouse right — so a visitor
+ * who prefers reduced motion sees exactly the hero
  * everyone else lands on. What they don't get is the push through the door;
  * the copy that follows on the page does that work instead.
  */
@@ -60,11 +59,6 @@ export function HeroStatic() {
           <Reveal delay={330}>
             <div className="mt-10">
               <Cta className="px-8 py-4 text-base" />
-            </div>
-          </Reveal>
-          <Reveal delay={440}>
-            <div className="mt-14">
-              <FlagshipBadge />
             </div>
           </Reveal>
         </div>

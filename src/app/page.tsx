@@ -7,7 +7,8 @@ import { Integrations } from "@/components/sections/Integrations";
 import { Voices } from "@/components/sections/Voices";
 import { Diagnostic } from "@/components/sections/Diagnostic";
 import { TrustPillars } from "@/components/sections/TrustPillars";
-import { LearnsAndBuild } from "@/components/sections/LearnsAndBuild";
+import { Team } from "@/components/sections/Team";
+import { HowItWorks } from "@/components/sections/HowItWorks";
 import { Spotlight } from "@/components/sections/Spotlight";
 import { PriorityPicker } from "@/components/sections/PriorityPicker";
 import { FinalCta, SeoBlock, Footer } from "@/components/sections/Close";
@@ -34,7 +35,12 @@ export default function Home() {
         <Voices />
         <Diagnostic />
         <TrustPillars />
-        <LearnsAndBuild />
+        {/* Team takes the slot "Two halves of the same system" used to hold.
+            It reads better here than that section did: the pillars claim how
+            Cruz is built, and this is who builds it. The one dark section on
+            the page — see Team.tsx. */}
+        <Team />
+        <HowItWorks />
         <Spotlight />
         <PriorityPicker />
         <FinalCta />

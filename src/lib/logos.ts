@@ -4,7 +4,8 @@
  * Two sets, kept strictly apart because they make different claims:
  *
  *   CLIENTS  — companies using Cruz. Social proof. Appears in the marquee.
- *   FLAGSHIP — the single named reference callout in the hero.
+ *     Gerdau used to be a separate FLAGSHIP set of one, rendered as a hero
+ *     callout; it is a marquee logo like the rest now, so that set is gone.
  *   INTEGRATIONS — systems Cruz reads from. A compatibility claim, NOT an
  *     endorsement. These must never appear in the client marquee or under a
  *     "trusted by" heading; doing so would imply SAP is a Cruz customer.
@@ -19,8 +20,8 @@
  *   2. Every mark is sized to the same rendered AREA, which is why `aspect` is
  *      recorded here. Fitting them all into one fixed box does not work: in a
  *      short wide slot a near-square mark like Brannon is height-capped and
- *      ends up less than half the area of a long lockup like Monarch. Equal
- *      area is what "consistent size" actually means for shapes this different.
+ *      ends up less than half the area of a long lockup like 3GM. Equal area
+ *      is what "consistent size" actually means for shapes this different.
  *
  * If you add or replace a logo: trim it, then re-measure its aspect.
  */
@@ -43,8 +44,24 @@ export type Logo = {
   scale?: number;
 };
 
+/**
+ * Three of these are .webp where the rest are .png/.jpg, and that is
+ * deliberate. Brannon, PPC and Sabre all shipped as opaque white rectangles —
+ * Sabre was palette-mode with no alpha channel at all — so each slid along the
+ * strip as a visible white card. `.logo-plate`'s mix-blend-mode multiply is
+ * meant to absorb that and does for true #ffffff, but PPC's plate is
+ * (252,254,255), a blue-tinted white that multiplies to something fractionally
+ * darker than paper, which is enough to draw the rectangle back in.
+ *
+ * The plates are knocked out to real alpha by border flood-fill — not a white
+ * threshold, which would have punched through PPC's white monogram letterforms
+ * and the counters inside the other two marks. Re-saving as .webp gives each a
+ * new URL so a browser holding the opaque copy cannot keep serving it; same
+ * reasoning as the Salesforce mark's .png -> .webp move. Aspects below are
+ * re-measured off the trimmed files.
+ */
 export const CLIENT_LOGOS: Logo[] = [
-  { src: "/logos/clients/brannon-steel.png", alt: "Brannon Steel", aspect: 0.93 },
+  { src: "/logos/clients/brannon-steel.webp", alt: "Brannon Steel", aspect: 0.92 },
   { src: "/logos/clients/greer-steel.jpg", alt: "Greer Steel", aspect: 1.5 },
   { src: "/logos/clients/3gm.png", alt: "3GM Steel", aspect: 5.19 },
   {
@@ -53,9 +70,12 @@ export const CLIENT_LOGOS: Logo[] = [
     aspect: 1.78,
   },
   {
-    src: "/logos/clients/monarch-steel.png",
-    alt: "Monarch Steel Company",
-    aspect: 4.95,
+    // Was the hero's standalone flagship callout. It now rides the marquee
+    // with the rest of the client set — hence the flagship/ path, which is
+    // kept so the existing asset is reused rather than duplicated.
+    src: "/logos/flagship/gerdau.jpg",
+    alt: "Gerdau",
+    aspect: 1,
   },
   {
     src: "/logos/clients/alliance-trading.png",
@@ -63,11 +83,11 @@ export const CLIENT_LOGOS: Logo[] = [
     aspect: 2.17,
   },
   {
-    src: "/logos/clients/ppc-specialty-metals.png",
+    src: "/logos/clients/ppc-specialty-metals.webp",
     alt: "PPC Specialty Metals",
-    aspect: 3.71,
+    aspect: 4.41,
   },
-  { src: "/logos/clients/sabre-alloys.png", alt: "Sabre Alloys", aspect: 2.06 },
+  { src: "/logos/clients/sabre-alloys.webp", alt: "Sabre Alloys", aspect: 2.11 },
   {
     src: "/logos/clients/optimal-alloys.png",
     alt: "Optimal Alloys",
@@ -79,12 +99,6 @@ export const CLIENT_LOGOS: Logo[] = [
     aspect: 3.93,
   },
 ];
-
-export const FLAGSHIP_LOGO: Logo = {
-  src: "/logos/flagship/gerdau.jpg",
-  alt: "Gerdau",
-  aspect: 1,
-};
 
 /**
  * `note` is the category, not a claim about the relationship. Keep it that way
@@ -127,17 +141,28 @@ export const INTEGRATION_LOGOS: Integration[] = [
   {
     name: "Invera",
     note: "ERP / Metals",
-    // Rebuilt from the vendor's own menu asset. The 1024px master that was in
-    // the repo is a vertically STRETCHED copy — it measures 1.24 for what is
-    // a 6.4:1 wordmark, and shipping it would have put a visibly distorted
-    // logo on the page.
+    // Supplied direct as a transparent PNG and trimmed to its content box —
+    // the file arrived 1536x1024 with the wordmark in a band across the
+    // middle, ~86% empty, and `object-contain` fits the whole file including
+    // dead margin. No knockout was needed: it already carried a real alpha
+    // channel. Replaces an earlier rebuild off the vendor's 200x40 menu asset.
     src: "/logos/integrations/invera.webp",
     alt: "Invera",
-    aspect: 6.4,
+    // 7.79, measured off the trimmed 1059x136 file — a longer, thinner lockup
+    // than the 6.4 the menu-asset rebuild measured.
+    aspect: 7.79,
     // Past ~6:1 equal area stops holding optically: the mark is width-capped
     // by the slot before it earns its share of ink and reads thin next to the
     // square marks. Same exception Google Workspace needs, for the same reason.
-    scale: 1.2,
+    //
+    // 1.1, down from the 1.2 the 6.4 aspect took. The boost lifts the width cap
+    // as well as the area, so carrying 1.2 onto a wider aspect would have run
+    // the mark out to 251px — wider than it has ever rendered, and enough to
+    // unbalance its row. At 1.1 it lands at 230px against the old 227px, so the
+    // mark keeps the footprint it had, and the integration rows come out
+    // 1039 / 1048 — closer than the 1036 / 1048 they balanced at before. See
+    // the 7/8 split in Integrations.tsx, which depends on this.
+    scale: 1.1,
   },
   {
     name: "QuickBooks",

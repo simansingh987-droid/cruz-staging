@@ -178,9 +178,12 @@ html.js .reveal[data-shown="true"] {
   animation: marquee-drift linear infinite;
 }
 
-.marquee:hover .marquee-track {
-  animation-play-state: paused;
-}
+/* Deliberately NOT paused on hover.
+   The strip spans the full viewport width, so on a desktop with the pointer
+   resting anywhere near the middle of the page the whole thing simply stopped
+   as it scrolled past — which reads as broken rather than as a considerate
+   pause. Nothing in the strip is interactive, so there is nothing a visitor
+   needs it held still for. */
 
 /* Soft edges so logos enter and leave rather than being cut off. */
 .marquee-mask {
@@ -198,6 +201,117 @@ html.js .reveal[data-shown="true"] {
     #000 92%,
     transparent
   );
+}
+
+/* ============================================================
+   Industries — the slitting line's dwell meter.
+
+   A hairline that fills across the open lane for exactly as long
+   as that lane is going to stay open, so the advance is announced
+   rather than sprung. `scaleX` on a fixed-width element, not an
+   animated `width`: transform is composited, width is a layout
+   property and animating it would relayout the lane 60 times a
+   second while its flex-grow is already in motion.
+
+   Duration comes from the component (DWELL), so the bar and the
+   interval cannot drift apart. Restarting it is a REMOUNT, not a
+   class swap — see the `key` in Industries.tsx.
+   ============================================================ */
+@keyframes dwell-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.dwell-meter {
+  animation: dwell-fill linear forwards;
+}
+
+/* Vertical variant, for the capability stepper's rules. Same timing, same
+   remount-to-restart rule; only the axis differs. */
+@keyframes dwell-fill-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* ============================================================
+   Capability layers — the diagram that accumulates.
+
+   Threads are drawn twice: a static hairline, and a short dash
+   travelling along the identical path. That travelling copy is
+   the light packet, and doing it with stroke-dashoffset rather
+   than offset-path is deliberate — offset-path is what broke
+   the thread diagrams on Safari once already (ThreadDiagram.tsx
+   carries the full story). dasharray and dashoffset have worked
+   everywhere for twenty years.
+
+   The dash pattern is one short mark against a gap longer than
+   any path here, so exactly one pulse is in flight at a time.
+   ============================================================ */
+.cap-line {
+  fill: none;
+  stroke: var(--color-rule);
+  stroke-width: 1.25;
+}
+
+.cap-pulse {
+  fill: none;
+  stroke: var(--color-slate);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 16 460;
+  animation: cap-flow 2.6s linear infinite;
+}
+
+@keyframes cap-flow {
+  from {
+    stroke-dashoffset: 476;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* `fill-box` so the origin is the circle's own centre rather than the SVG's
+   user-space origin — without it the orbit swings around the top-left corner
+   of the viewBox instead of around the mark. */
+.cap-orbit {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cap-spin 34s linear infinite;
+}
+
+@keyframes cap-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The contour draws itself once, rather than fading in: the layer's claim is
+   that the system TAKES a shape, and a shape arriving stroke-first says that
+   where a cross-fade just says "another line appeared". */
+.cap-contour {
+  fill: none;
+  stroke: var(--color-slate);
+  stroke-width: 1.5;
+  stroke-dasharray: 900;
+  animation: cap-draw 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cap-draw {
+  from {
+    stroke-dashoffset: 900;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* ============================================================
@@ -277,6 +391,18 @@ html.js .reveal[data-shown="true"] {
   }
 
   .marquee-track {
+    animation: none !important;
+  }
+
+  /* The capability threads' travelling packets carry no information the static
+     hairline underneath does not already carry, so they simply go. Left to the
+     blanket 0.01ms rule above they would freeze as a stray dash partway along
+     each thread, which looks like a rendering fault rather than a still. */
+  .cap-pulse {
+    display: none;
+  }
+
+  .cap-orbit {
     animation: none !important;
   }
 
