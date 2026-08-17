@@ -44,10 +44,6 @@ export function Spotlight() {
         <Reveal delay={80} className="mt-14">
           <LiveAnswer />
         </Reveal>
-
-        <Reveal delay={180} className="mt-10">
-          <Cta className="px-8 py-4 text-base" />
-        </Reveal>
       </div>
     </Section>
   );

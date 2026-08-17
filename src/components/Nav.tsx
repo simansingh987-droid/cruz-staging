@@ -176,64 +176,24 @@ export function Nav() {
 
   return (
     <header
-      // A floating pill rather than a full-width band welded to the top edge.
-      // The padding here is what detaches it — the bar no longer spans the
-      // viewport, it hovers inside it, which is the current convention for
-      // this kind of marketing site and reads as considerably lighter than a
-      // hard-edged strip.
-      className="fixed inset-x-0 top-0 z-50 pt-3 sm:pt-4"
+      className="fixed inset-x-0 top-0 z-50 pt-2 flex justify-center pointer-events-none"
     >
       {/* Same max-width and horizontal padding as the hero's copy column
           (see ConvergenceHero's `max-w-6xl px-5 sm:px-8 lg:px-12`), so the
-          wordmark lands exactly where the hero headline starts instead of at
-          a pill's own, narrower, centred inset. */}
-      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12">
+          wordmark lands exactly where the hero headline starts. */}
+      <div className="pointer-events-auto mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12">
         <nav
           aria-label="Primary"
-          // ONE pill spanning the content column — not two.
-          //
-          // Giving the wordmark its own pill beside the links pill fixed the
-          // overlap problem (page copy was scrolling under an unbacked mark)
-          // but produced two floating capsules with a gap between them, which
-          // reads as two navigation bars rather than one.
-          //
-          // `-mx-[13px]` against `px-3` is what lets a single pill do both jobs
-          // at once. The fill extends past the content column on each side,
-          // while the pill's CONTENT box starts exactly ON the column edge —
-          // so the wordmark sits at the hero headline's x, unmoved, and the
-          // CTA ends flush with the column's right edge. Padding without the
-          // negative margin would have pushed both inward by 12px.
-          //
-          // 13, not 12, because the pill is `border` — one pixel of it. The
-          // margin has to cancel border + padding, and at -12 the wordmark
-          // measured exactly 1px right of the h1 it is meant to line up with.
-          //
-          // Translucent + backdrop-blur, NOT an opaque fill. The bar has to
-          // stay readable over the hero footage — the reason it stopped being
-          // transparent — but at 80% over a blur the page reads through it as
-          // texture rather than legible detail, so the links keep their
-          // contrast while the bar stops looking like a slab pasted on top.
-          //
-          // Two states, switched by what is currently behind the bar. Over a
-          // visual the fill, border and shadow all drop away so the chrome
-          // stops competing with the imagery; the blur is deliberately KEPT
-          // even then, since it is the only thing standing between these links
-          // and the blown-out warehouse roof that made them unreadable when
-          // this bar was last fully transparent. Over ordinary content the
-          // pill comes back, transitioned rather than snapped.
+          // `-mx-[13px]` against `px-3` offsets the padding and 1px border. 
+          // This ensures the logo aligns perfectly with the hero text.
           className={`-mx-[13px] flex items-center justify-between gap-5 rounded-full border px-3 py-1.5 backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-500 ease-out ${
             overVisual
               ? "border-transparent bg-transparent shadow-none"
-              : "bg-paper/80 border-rule/60 shadow-[0_8px_30px_-12px_rgba(43,66,87,0.28)]"
+              : "bg-paper/85 border-rule/60 shadow-[0_16px_40px_-12px_rgba(43,66,87,0.3)]"
           }`}
         >
           <Link
             href="#top"
-            // `-my-1 py-1` restores the 44px minimum hit target: the mark is
-            // 36px now, 8px under it. The padding grows the tappable box by
-            // 4px top and bottom while the matching negative margin cancels it
-            // in layout, so the pill's height and the wordmark's position are
-            // both unchanged by it.
             className="-my-1 flex shrink-0 items-center gap-2.5 py-1"
             aria-label="AskCruz home"
           >
@@ -243,69 +203,58 @@ export function Nav() {
             </span>
           </Link>
 
-          {/* Links and CTA travel together, hard right. `justify-between` on
-              the pill would otherwise fan them across the full column now that
-              it is 6xl rather than the 3xl the old links-only pill was. */}
+          {/* Links and CTA travel together, hard right. */}
           <div className="flex items-center gap-5">
             <ul className="hidden items-center gap-8 md:flex">
-              {LINKS.map((l) => (
-                <li key={l.href}>
-                  {/* Hover does two things at once: the label takes the brand
-                      slate, and it lifts off the page — a small rise plus a
-                      soft shadow cast down and behind it, so the link reads as
-                      a physical key being raised rather than just recoloured.
-                      `active` presses it back down flat, which is what makes
-                      the lift feel like depth instead of a wobble. */}
-                  <Link
-                    href={l.href}
-                    className="text-mute hover:text-slate inline-block text-sm font-medium transition-all duration-200 ease-out will-change-transform hover:-translate-y-0.5 hover:[text-shadow:0_6px_12px_rgba(43,66,87,0.28)] active:translate-y-0 active:[text-shadow:none]"
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <Link
+                  href={l.href}
+                  className="text-mute hover:text-slate inline-block text-sm font-medium transition-all duration-200 ease-out will-change-transform hover:-translate-y-0.5 hover:[text-shadow:0_6px_12px_rgba(43,66,87,0.28)] active:translate-y-0 active:[text-shadow:none]"
+                >
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
 
-            <div className="hidden md:block">
-              <Cta className="px-4 py-2 text-xs" />
-            </div>
+          <div className="hidden md:block pl-2">
+            <Cta className="px-5 py-2 text-xs font-semibold" />
+          </div>
 
-            <button
-              type="button"
-              onClick={() => setOpen((v) => !v)}
-              aria-expanded={open}
-              aria-controls="mobile-nav"
-              // p-2.5 puts the hit box at 44px — the minimum a fingertip can
-              // reliably land on. The negative margin keeps it optically
-              // aligned to the pill's content edge despite the extra padding.
-              className="text-ink -mr-2.5 p-2.5 md:hidden"
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            className="text-ink p-2 md:hidden"
+          >
+            <span className="sr-only">
+              {open ? "Close menu" : "Open menu"}
+            </span>
+            <svg
+              viewBox="0 0 24 24"
+              className="h-6 w-6"
+              aria-hidden
+              fill="none"
             >
-              <span className="sr-only">
-                {open ? "Close menu" : "Open menu"}
-              </span>
-              <svg
-                viewBox="0 0 24 24"
-                className="h-6 w-6"
-                aria-hidden
-                fill="none"
-              >
-                {open ? (
-                  <path
-                    d="M6 6l12 12M18 6L6 18"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                  />
-                ) : (
-                  <path
-                    d="M4 7h16M4 12h16M4 17h16"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                  />
-                )}
-              </svg>
-            </button>
+              {open ? (
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              ) : (
+                <path
+                  d="M4 7h16M4 12h16M4 17h16"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              )}
+            </svg>
+          </button>
           </div>
         </nav>
       </div>
@@ -313,28 +262,23 @@ export function Nav() {
       {open ? (
         <div
           id="mobile-nav"
-          // Its own rounded card below the pill, not a panel welded under a
-          // full-width band — the old `border-t` was there to butt against a
-          // bar that no longer spans the viewport, and would have hung in
-          // mid-air on its own. Padded to the same 6xl content column as the
-          // header row above it, so its edges line up with the wordmark.
-          className="mx-auto mt-2 max-w-6xl px-5 sm:px-8 lg:px-12 md:hidden"
+          className="absolute inset-x-0 top-full mt-2 mx-auto max-w-lg px-4 pointer-events-auto md:hidden"
         >
-          <div className="border-rule/60 bg-paper/95 rounded-3xl border px-5 pt-3 pb-6 shadow-[0_8px_30px_-12px_rgba(43,66,87,0.28)] backdrop-blur-xl">
-          <ul className="flex flex-col">
-            {LINKS.map((l) => (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="text-ink border-rule/35 block border-b py-3.5 text-base font-medium"
-                >
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <Cta className="mt-6 w-full justify-center" />
+          <div className="border-rule/60 bg-paper/95 rounded-3xl border px-5 pt-3 pb-6 shadow-[0_16px_40px_-12px_rgba(43,66,87,0.3)] backdrop-blur-xl">
+            <ul className="flex flex-col">
+              {LINKS.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    onClick={() => setOpen(false)}
+                    className="text-ink border-rule/35 block border-b py-3.5 text-base font-medium"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <Cta className="mt-6 w-full justify-center" />
           </div>
         </div>
       ) : null}

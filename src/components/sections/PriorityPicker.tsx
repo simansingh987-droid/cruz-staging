@@ -126,13 +126,6 @@ export function PriorityPicker() {
           <p className="type-data text-slate border-slate/25 mt-7 border-l-2 py-1 pl-4 normal-case">
             {current.proof}
           </p>
-          <div className="mt-9">
-            {/* solid (default), not outline — every other CTA on the page is
-                the filled slate button; this was the one holdout still using
-                the old unfilled treatment, which is why it read as "still
-                white" even after Cta.tsx's solid variant was changed. */}
-            <Cta />
-          </div>
         </div>
       </Reveal>
     </Section>

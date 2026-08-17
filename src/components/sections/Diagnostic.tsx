@@ -152,14 +152,6 @@ export function Diagnostic() {
               ))}
             </ul>
           )}
-
-          <div className="border-rule/50 mt-8 border-t pt-7">
-            <p className="text-mute mb-5 text-sm">
-              A fit call is 30 minutes. We map this against your actual systems
-              and tell you plainly whether Cruz is worth your time.
-            </p>
-            <Cta />
-          </div>
         </Reveal>
       </div>
     </Section>
